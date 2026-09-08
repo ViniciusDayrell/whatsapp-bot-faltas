@@ -1,0 +1,6 @@
+PyAutoGUI==0.9.54
+PyScreeze==1.0.1
+pandas==3.0.0
+phonenumbers==9.0.38
+opencv-python==5.0.0.93
+xlrd==1.2.0

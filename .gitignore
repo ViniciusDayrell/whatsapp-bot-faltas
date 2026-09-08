@@ -1,0 +1,32 @@
+# Dados sensíveis - NUNCA versionar
+*.xls
+*.xlsx
+!alunos_exemplo.xls
+!assets/alunos_exemplo.xlsx
+debug_*.png
+*.env
+.env
+
+# Ambiente virtual
+venv/
+env/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Configurações de IDE
+.vscode/
+.idea/
+*.swp
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
