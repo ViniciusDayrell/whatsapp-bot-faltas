@@ -26,7 +26,7 @@ def normalizar_telefone(valor):
         print("Numero não cadastrado")
         return None
 
-def contato(nome, telefone_aluno, telefone_responsavel):
+def msg_contato(nome, telefone_aluno, telefone_responsavel):
     telefone_aluno = normalizar_telefone(telefone_aluno)
     
     if telefone_aluno:
@@ -40,11 +40,12 @@ def contato(nome, telefone_aluno, telefone_responsavel):
     
     if telefone_responsavel:
         mensagem = (
-            
+            'Olá! Tudo bem? '
+            f'Sentimos falta do {nome} na aula de hoje. Houve algum imprevisto?'
         )
-
-# webbrowser.open('https://web.whatsapp.com/')
-# sleep(10)
+        return telefone_responsavel, mensagem, 'Responsavel'
+    
+    return None, None, None
 
 #Ler planilha Faltas Hoje e guardar informacoes sobre nome e telefone
 workbook = xlrd.open_workbook('alunos_exemplo.xls')
@@ -59,18 +60,20 @@ for linha_idx in range(1, planilha.nrows):
     
     nome = dados.get('Nome Aluno')
     telefone_aluno = dados.get('Telefone Aluno')
+    telefone_responsavel = dados.get('Telefone Responsável')
     
-    telefone_aluno_normalizado = normalizar_telefone(telefone_aluno)
-    
-    if telefone_aluno_normalizado is None:
-        print(f"Pulando {nome}: telefone inválido ou ausente")
-        continue
-    
-    mensagem = f'Olá {nome}, tudo bem? Sentimos sua falta na aula de hoje. Houve algum imprevisto?'
+    telefone_contato, mensagem, contato = msg_contato(nome, telefone_aluno, telefone_responsavel)
     
     #Criar um links personalizados do whatsapp e enviar mensagens com base nos dados da planilha
-    link_msg_whatsapp = f'https://web.whatsapp.com/send?phone={telefone_aluno_normalizado}&text={quote(mensagem)}'
-
+    if contato == 'Aluno':
+        print(f"Mensagen enviada ao aluno {nome}")
+        link_msg_whatsapp = f'https://web.whatsapp.com/send?phone={telefone_contato}&text={quote(mensagem)}'
+    elif contato == 'Responsavel':
+        print(f"Mensagem enviada ao responsavel do aluno {nome}")
+        link_msg_whatsapp = f'https://web.whatsapp.com/send?phone={telefone_contato}&text={quote(mensagem)}'
+    elif telefone_contato is None:
+        print(f"Pulando {nome}: telefone inválido ou ausente")
+    
     webbrowser.open(link_msg_whatsapp)
     sleep(20)
 
@@ -111,4 +114,4 @@ for linha_idx in range(1, planilha.nrows):
     except pyautogui.ImageNotFoundException:
         print(f'Não foi possível enviar mensagem para {nome}')
         with open('erros.csv','a',newline='',encoding='utf-8') as arquivo:
-            arquivo.write(f'{nome},{telefone_aluno_normalizado}')
+            arquivo.write(f'{nome},{telefone_contato}')
