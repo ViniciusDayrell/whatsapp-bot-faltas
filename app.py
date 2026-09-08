@@ -26,6 +26,23 @@ def normalizar_telefone(valor):
         print("Numero não cadastrado")
         return None
 
+def contato(nome, telefone_aluno, telefone_responsavel):
+    telefone_aluno = normalizar_telefone(telefone_aluno)
+    
+    if telefone_aluno:
+        mensagem = (
+            f'Olá {nome}, tudo bem? '
+            'Sentimos sua falta na aula de hoje. Houve algum imprevisto?'
+        )
+        return telefone_aluno, mensagem, 'Aluno'
+    
+    telefone_responsavel = normalizar_telefone(telefone_responsavel)
+    
+    if telefone_responsavel:
+        mensagem = (
+            
+        )
+
 # webbrowser.open('https://web.whatsapp.com/')
 # sleep(10)
 
