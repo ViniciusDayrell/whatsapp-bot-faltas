@@ -6,6 +6,7 @@ import xlrd
 from urllib.parse import quote
 import webbrowser
 from time import sleep
+from datetime import datetime, date
 import pandas as pd
 from phonenumbers import PhoneNumberFormat, parse as phone_parse, format_number as phone_format
 from io import StringIO
@@ -47,11 +48,40 @@ def msg_contato(nome, telefone_aluno, telefone_responsavel):
     
     return None, None, None
 
+def reset_arquivo():
+    arquivo = 'enviados_hoje_alunos.csv'
+    
+    timestamp = os.path.getmtime("enviados_hoje_alunos.csv")
+    
+    dt_modificacao = datetime.fromtimestamp(timestamp).date()
+    dt_hoje = date.today()
+    
+    if dt_modificacao < dt_hoje:
+        open(arquivo, "w").close()
+        print("Arquivo resetado!")
+    else:
+        print("O arquivo e de hoje. Nada foi apagado!")
+
+def arq_existente():
+    existe = os.path.exists("enviados_hoje_alunos.csv")
+    
+    if existe:
+        return True
+    else:
+        return False
+
 #Ler planilha Faltas Hoje e guardar informacoes sobre nome e telefone
 workbook = xlrd.open_workbook('alunos_exemplo.xls')
 planilha = workbook.sheet_by_index(0)
 
 headers = planilha.row_values(0)
+
+if arq_existente():
+    print("Arquivo existente!")
+    reset_arquivo()
+else:
+    print("Arquivo nao existente!")
+
 
 for linha_idx in range(1, planilha.nrows):
     #nome, telefone_aluno, telefone_responsavel
@@ -68,11 +98,20 @@ for linha_idx in range(1, planilha.nrows):
     if contato == 'Aluno':
         print(f"Mensagen enviada ao aluno {nome}")
         link_msg_whatsapp = f'https://web.whatsapp.com/send?phone={telefone_contato}&text={quote(mensagem)}'
+        
+        with open('enviados_hoje_alunos.csv','a',newline='',encoding='utf-8') as arquivo_enviados:
+            arquivo_enviados.write(f'{nome};')
+            
     elif contato == 'Responsavel':
         print(f"Mensagem enviada ao responsavel do aluno {nome}")
         link_msg_whatsapp = f'https://web.whatsapp.com/send?phone={telefone_contato}&text={quote(mensagem)}'
+        
+        with open('enviados_hoje_alunos.csv','a',newline='',encoding='utf-8') as arquivo_enviados:
+            arquivo_enviados.write(f'{nome};')
+            
     elif telefone_contato is None:
         print(f"Pulando {nome}: telefone inválido ou ausente")
+        continue
     
     webbrowser.open(link_msg_whatsapp)
     sleep(20)
