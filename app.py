@@ -14,6 +14,7 @@ from phonenumbers.phonenumberutil import NumberParseException
 import pyautogui
 import pyscreeze
 import os
+import csv
 
 def normalizar_telefone(valor):
     try:
@@ -48,10 +49,8 @@ def msg_contato(nome, telefone_aluno, telefone_responsavel):
     
     return None, None, None
 
-def reset_arquivo():
-    arquivo = 'enviados_hoje_alunos.csv'
-    
-    timestamp = os.path.getmtime("enviados_hoje_alunos.csv")
+def reset_arquivo(arquivo):
+    timestamp = os.path.getmtime(arquivo)
     
     dt_modificacao = datetime.fromtimestamp(timestamp).date()
     dt_hoje = date.today()
@@ -62,10 +61,17 @@ def reset_arquivo():
     else:
         print("O arquivo e de hoje. Nada foi apagado!")
 
-def arq_existente():
-    existe = os.path.exists("enviados_hoje_alunos.csv")
+def arq_existente(arquivo):
+    existe = os.path.exists(arquivo)
     
     if existe:
+        return True
+    else:
+        return False
+
+def ja_enviados(nome, coluna_unica):
+    
+    if nome in coluna_unica:
         return True
     else:
         return False
@@ -76,11 +82,19 @@ planilha = workbook.sheet_by_index(0)
 
 headers = planilha.row_values(0)
 
-if arq_existente():
+arquivo = 'enviado_hoje_alunos.csv'
+
+if arq_existente(arquivo):
     print("Arquivo existente!")
-    reset_arquivo()
+    reset_arquivo(arquivo)
 else:
     print("Arquivo nao existente!")
+    with open('enviados_hoje_alunos.csv', 'w', encoding='utf-8') as arquivo:
+        pass  # só criar vazio, sem escrever nada
+    
+with open('enviados_hoje_alunos.csv','r',encoding='utf-8') as arquivo:
+        leitor = csv.reader(arquivo)
+        coluna_unica = set(linha[0] for linha in leitor if linha)
 
 
 for linha_idx in range(1, planilha.nrows):
@@ -89,68 +103,73 @@ for linha_idx in range(1, planilha.nrows):
     dados = dict(zip(headers, linha))
     
     nome = dados.get('Nome Aluno')
-    telefone_aluno = dados.get('Telefone Aluno')
-    telefone_responsavel = dados.get('Telefone Responsável')
     
-    telefone_contato, mensagem, contato = msg_contato(nome, telefone_aluno, telefone_responsavel)
-    
-    #Criar um links personalizados do whatsapp e enviar mensagens com base nos dados da planilha
-    if contato == 'Aluno':
-        print(f"Mensagen enviada ao aluno {nome}")
-        link_msg_whatsapp = f'https://web.whatsapp.com/send?phone={telefone_contato}&text={quote(mensagem)}'
-        
-        with open('enviados_hoje_alunos.csv','a',newline='',encoding='utf-8') as arquivo_enviados:
-            arquivo_enviados.write(f'{nome};')
-            
-    elif contato == 'Responsavel':
-        print(f"Mensagem enviada ao responsavel do aluno {nome}")
-        link_msg_whatsapp = f'https://web.whatsapp.com/send?phone={telefone_contato}&text={quote(mensagem)}'
-        
-        with open('enviados_hoje_alunos.csv','a',newline='',encoding='utf-8') as arquivo_enviados:
-            arquivo_enviados.write(f'{nome};')
-            
-    elif telefone_contato is None:
-        print(f"Pulando {nome}: telefone inválido ou ausente")
+    if ja_enviados(nome, coluna_unica):
+        print(f"Mensagem já enviada ao aluno {nome}")
         continue
-    
-    webbrowser.open(link_msg_whatsapp)
-    sleep(20)
-
-    # print("Diretório atual:", os.getcwd())
-    # print("Arquivo existe?", os.path.exists("seta-wpp.PNG"))
-    
-    # debug_screenshot = pyautogui.screenshot()
-    # debug_screenshot.save("debug_tela_atual.png")
-    # print("Screenshot de debug salvo!")
-
-    try:
-        print("Procurando a seta...")
+    else:
+        telefone_aluno = dados.get('Telefone Aluno')
+        telefone_responsavel = dados.get('Telefone Responsável')
         
-        largura_tela, altura_tela = pyautogui.size()
-
-        # Região aproximada: canto inferior direito da tela
-        regiao_busca = (
-            int(largura_tela * 0.7),   # começa em 70% da largura
-            int(altura_tela * 0.7),    # começa em 70% da altura
-            int(largura_tela * 0.3),   # largura da região
-            int(altura_tela * 0.3)     # altura da região
-        )
+        telefone_contato, mensagem, contato = msg_contato(nome, telefone_aluno, telefone_responsavel)
         
-        seta = pyautogui.locateCenterOnScreen(
-            'seta-wpp.PNG',
-            confidence=0.8,
-            grayscale=True,
-            region=regiao_busca
-        )
+        #Criar um links personalizados do whatsapp e enviar mensagens com base nos dados da planilha
+        if contato == 'Aluno':
+            print(f"Mensagen enviada ao aluno {nome}")
+            link_msg_whatsapp = f'https://web.whatsapp.com/send?phone={telefone_contato}&text={quote(mensagem)}'
             
-        sleep(5)
-        pyautogui.click(seta)
-        print("Seta encontrada!")
-        sleep(5)
-        pyautogui.hotkey('ctrl','w')
-        sleep(5)
-    
-    except pyautogui.ImageNotFoundException:
-        print(f'Não foi possível enviar mensagem para {nome}')
-        with open('erros.csv','a',newline='',encoding='utf-8') as arquivo:
-            arquivo.write(f'{nome},{telefone_contato}')
+            with open('enviados_hoje_alunos.csv','a',newline='',encoding='utf-8') as arquivo_enviados:
+                arquivo_enviados.write(f'{nome}\n')
+                
+        elif contato == 'Responsavel':
+            print(f"Mensagem enviada ao responsavel do aluno {nome}")
+            link_msg_whatsapp = f'https://web.whatsapp.com/send?phone={telefone_contato}&text={quote(mensagem)}'
+            
+            with open('enviados_hoje_alunos.csv','a',newline='',encoding='utf-8') as arquivo_enviados:
+                arquivo_enviados.write(f'{nome}\n')
+                
+        elif telefone_contato is None:
+            print(f"Pulando {nome}: telefone inválido ou ausente")
+            continue
+        
+        webbrowser.open(link_msg_whatsapp)
+        sleep(20)
+
+        # print("Diretório atual:", os.getcwd())
+        # print("Arquivo existe?", os.path.exists("seta-wpp.PNG"))
+        
+        # debug_screenshot = pyautogui.screenshot()
+        # debug_screenshot.save("debug_tela_atual.png")
+        # print("Screenshot de debug salvo!")
+
+        try:
+            print("Procurando a seta...")
+            
+            largura_tela, altura_tela = pyautogui.size()
+
+            # Região aproximada: canto inferior direito da tela
+            regiao_busca = (
+                int(largura_tela * 0.7),   # começa em 70% da largura
+                int(altura_tela * 0.7),    # começa em 70% da altura
+                int(largura_tela * 0.3),   # largura da região
+                int(altura_tela * 0.3)     # altura da região
+            )
+            
+            seta = pyautogui.locateCenterOnScreen(
+                'seta-wpp.PNG',
+                confidence=0.8,
+                grayscale=True,
+                region=regiao_busca
+            )
+                
+            sleep(5)
+            pyautogui.click(seta)
+            print("Seta encontrada!")
+            sleep(5)
+            pyautogui.hotkey('ctrl','w')
+            sleep(5)
+        
+        except pyautogui.ImageNotFoundException:
+            print(f'Não foi possível enviar mensagem para {nome}')
+            with open('erros.csv','a',newline='',encoding='utf-8') as arquivo:
+                arquivo.write(f'{nome},{telefone_contato}')
